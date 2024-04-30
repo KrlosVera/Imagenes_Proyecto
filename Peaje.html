@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8" /> <!-- Declara la codificación de caracteres UTF-8 -->
+
+<head>
+    <title>Proyecto Final Peajes</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins&display=swap">
+
+    <!-- Enlaza la hoja de estilos de Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script> <!-- Enlaza la biblioteca de Leaflet -->
+
+    <!-- Agregamos la hoja de estilos del plugin Leaflet.Labels -->
+
+    <style>
+        /* Estilos CSS pueden ir aquí */
+        body {
+            font-family: 'Poppins', serif; /* Tipo de fuente y fuente genérica */
+            background-color: #f0f0f0; /* Color de fondo */
+            margin: 0; /* Margen */
+            padding: 0; /* Relleno */
+        }
+        header {
+            background-color: #F1F1F1; /* Color de fondo */
+            color: #8C8C8C; /* Color del texto */
+            padding: 8px; /* Relleno del fondo dl titulo*/
+            text-align: center; /* Alineación del texto */
+            display: flex; /* Utiliza el modelo de caja flexible para alinear elementos */
+            align-items: center; /* Centra verticalmente los elementos */
+            justify-content: center; /* Centra horizontalmente los elementos */
+        }
+
+        header img {
+            width: 50px; /* Ajusta el ancho de la imagen según sea necesario */
+            margin-right: 10px; /* Agrega un espacio entre la imagen y el título */
+        }
+
+        
+
+
+
+        /* Estilos CSS para el mapa */
+        #map {
+            width: 100%;
+            height: 600px;
+            box-shadow: 5px 5px 5px #888;
+        }
+
+        /* Estilo para los íconos (imágenes) de las capas */
+        .layer-icon {
+            height: 15px;
+            width: 15px;
+        }
+
+        /* Estilos CSS para la información emergente */
+        .info {
+            padding: 6px 8px;
+            font: 14px/16px Arial, Helvetica, sans-serif;
+            background: white;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+
+        /* Estilos CSS para la leyenda */
+        .legend-title {
+            font-size: 13px;
+            /* Tamaño de la letra de la leyenda */
+            font-weight: bold;
+        }
+    </style>
+
+
+
+</head>
+
+<body>
+    <header>
+        <img src="https://raw.githubusercontent.com/KrlosVera/Imagenes_Proyecto/main/0f8200cc-ad5c-467d-a722-cf135dc00a89%20-%20copia.png" alt="Logo"> <!-- Imagen -->
+        <h1>Proyecto Final Peajes</h1>
+    </header>
+
+    <div id="map"></div> <!-- Contenedor del mapa -->
+
+       <script>
+        // Definición de las capas base
+        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18
+        });
+
+        var google = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            attribution: 'Map data &copy; Google',
+            maxZoom: 18,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        });
+
+        var esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '&copy; ESRI',
+            maxZoom: 18,
+            subdomains: ['0', '1', '2', '3']
+        });
+
+        // Definición de las capas de datos desde GeoServer
+        var departamentos = new L.tileLayer.wms("http://localhost:8080/geoserver/wms", {
+            layers: 'Peajes_Proyecto_Final:departamentos',
+            format: 'image/png',
+            transparent: true,
+            attribution: "Datos generados por la comunidad de usuarios de XYZ"
+        });
+
+        var redvial = new L.tileLayer.wms("http://localhost:8080/geoserver/wms", {
+            layers: 'Peajes_Proyecto_Final:redvial',
+            format: 'image/png',
+            transparent: true,
+            attribution: "Datos generados por la comunidad de usuarios de XYZ"
+        });
+
+        var peajes = new L.tileLayer.wms("http://localhost:8080/geoserver/wms", {
+            layers: 'Peajes_Proyecto_Final:peajes',
+            format: 'image/png',
+            transparent: true,
+            attribution: "Datos generados por la comunidad de usuarios de XYZ"
+        });
+
+        // Definición de las capas de base y superpuestas
+        var baseMaps = {
+            "OpenStreetMap": osm,
+            "Google Maps": google,
+            "ESRI Maps": esri,
+        };
+        var overlayMaps = {
+            "<img class='layer-icon' src='https://w7.pngwing.com/pngs/228/827/png-transparent-costa-rica-nicaragua-border-departamento-en-surco-orange-map-nicaragua-thumbnail.png'/> Departamentos": departamentos,
+            "<img class='layer-icon' src='https://w7.pngwing.com/pngs/239/148/png-transparent-road-carretera-sticker-string-instrument-road-transport-thumbnail.png' /> Red Vial": redvial,
+            "<img class='layer-icon' src='https://w7.pngwing.com/pngs/47/943/png-transparent-toll-road-computer-icons-toll-house-highway-tunnel-blue-angle-text-thumbnail.png' /> Peajes": peajes,
+        };
+
+        // Creación del mapa
+        var map = L.map('map', {
+            center: new L.LatLng(4.570868, -74.297333), // Coordenadas de Colombia
+            zoom: 5, // Zoom inicial
+            layers: [osm, google, esri, departamentos, redvial, peajes] // Capas iniciales del mapa
+        });
+
+        // Función para definir el color de relleno según la población
+
+
+        // Función para establecer el estilo de las características geoespaciales
+
+
+        // Creación de control de capas y adición al mapa
+        L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
+
+        // Insertando un título en el mapa
+        var title = L.control({ position: 'topleft' });
+        title.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'info');
+            div.innerHTML +=
+                '<h2>Ciudades del mundo</h2>Tamaño según población';  //Aqui se ingresa el titulo y subtitulo
+            return div;
+        };
+        title.addTo(map);
+
+        // Insertando una leyenda en el mapa
+        var legend = L.control({ position: 'bottomright' });
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'info legend');
+            div.innerHTML = '<h3 class="legend-title">Leyendas</h3>' +
+                '<div class="legend-item">' +
+                '<span class="legend-name">Departamentos </span>' +
+                '<img class="legend-img" src="http://localhost:8080/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=Peajes_Proyecto_Final:departamentos" />' +
+                '<div class="legend-item">' +
+                '<span class="legend-name">Red Vial </span>' +
+                '<img class="legend-img" src="http://localhost:8080/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=	Peajes_Proyecto_Final:redvial" />';
+            return div;
+        };
+        legend.addTo(map);
+
+        // Función para mostrar información emergente al hacer clic en las características geoespaciales
+        function popup(feature, layer) {
+            if (feature.properties && feature.properties.name) {
+                layer.bindPopup(feature.properties.name);
+            }
+        }
+
+        // Creación de objetos GeoJSON y adición al mapa
+
+
+    </script>
+</body>
+
+</html>
